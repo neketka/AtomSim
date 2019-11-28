@@ -81,13 +81,44 @@ public:
 	{
 		m_width = width;
 		m_height = height;
-		m_projection = glm::perspectiveFov(fovY * 3.141592f / 180.f, width, height, 0.3f, 1000.f);
+		m_projection = glm::perspectiveFov(fovY * 3.141592f / 180.f, width, height, 0.3f, 10000.f);
 	}
 
 	void SetupCameraLook(glm::vec3 pos, glm::vec3 lookat)
 	{
+		m_camPos = pos;
+		m_camLookat = lookat;
 		m_view = glm::lookAt(pos, lookat, glm::vec3(0, 1, 0));
 	}
+
+	void RotateAround(float dX, float dY)
+	{
+		m_camPos = glm::vec3(glm::translate<float>(m_camLookat) * glm::rotate<float>(dY, glm::vec3(0, 1, 0)) * glm::rotate<float>(dX, glm::vec3(1, 0, 0)) * glm::translate<float>(-m_camLookat) * glm::vec4(m_camPos, 1));
+		SetupCameraLook(m_camPos, m_camLookat);
+	}
+
+	void ScaleDown(float scale)
+	{
+		glm::vec3 vec = m_camPos - m_camLookat;
+		float length = glm::length(vec);
+		float newLen = length - scale;
+		vec = vec / length * ((newLen == 0.f) ? scale * 10 : newLen);
+		m_camPos = vec + m_camLookat;
+		SetupCameraLook(m_camPos, m_camLookat);
+	}
+
+	void Translate(float x, float y)
+	{
+		glm::vec3 forward = glm::normalize(m_camLookat - m_camPos);
+		glm::vec3 right = glm::cross(forward, glm::vec3(0, 1, 0));
+		glm::vec3 down = glm::cross(forward, right);
+		glm::vec3 delta = down * y + right * x;
+
+		m_camPos += delta;
+		m_camLookat += delta;
+		SetupCameraLook(m_camPos, m_camLookat);
+	}
+
 private:
 	void GenerateRenderBuffers();
 	void GenerateShaders();

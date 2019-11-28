@@ -40,14 +40,14 @@ layout(location = 2) uniform vec3 CamPos;
 
 void main()
 {
-	vec3 lightDir = normalize(vec3(1, 1, -0.5));
+	vec3 lightDir = normalize(vec3(-1, -1, 0.5));
 	vec3 ambient = vec3(0.2);
 
 	vec3 viewDir = normalize(CamPos - in_Pos);
 	vec3 reflectDir = reflect(lightDir, in_Normal);  
 
-	float diffuse = max(dot(in_Normal, lightDir), 0.0);
-	float specular = 0.0;//pow(max(dot(viewDir, reflectDir), 0.0), 16);
+	float diffuse = max(dot(in_Normal, -lightDir), 0.0);
+	float specular = pow(max(dot(viewDir, reflectDir), 0.0), 16) * 0;
 
 	fragment = vec4(diffuse * mix(Color, vec3(1.0), in_Velocity / 300.0) + specular * vec3(1.0) + ambient * Color, 1);
 }
@@ -126,7 +126,8 @@ float emf(float q1, float q2, float oneOverR)
 
 float sf(float r)
 {
-	return strongConst * (r - 1) / (r * (pow(r, strongDistConst) + 4));
+	return strongConst * pow(r, 1.0/3.0) / exp(strongDistConst * r);
+	//return strongConst * (r - 3) / (r * (pow(r, strongDistConst) + 4));
 }
 
 void main()
@@ -139,7 +140,7 @@ void main()
 	Particle p2 = Particles2[gl_GlobalInvocationID.y];
 #endif
 	vec3 vecTo = p2.PositionCharge.xyz - p1.PositionCharge.xyz;
-	float norm = length(vecTo) * 1.0;
+	float norm = length(vecTo) * 0.00001;
 	float oneOverNorm = 1.0 / norm;
 	vecTo = normalize(vecTo);
 
@@ -156,7 +157,7 @@ void main()
 #endif
 
 #ifdef PROTON_ELECTRON
-	vec3 emforce = -vecTo * emf(p1.PositionCharge.w, p2.PositionCharge.w, sqrt(oneOverNorm));
+	vec3 emforce = -vecTo * emf(p1.PositionCharge.w, p2.PositionCharge.w, oneOverNorm);
 	p1.Acceleration.xyz += mix(emforce / p1.VelocityMass.w, vec3(0.0), isnan(emforce));
 	p2.Acceleration.xyz -= mix(emforce / p2.VelocityMass.w, vec3(0.0), isnan(emforce));
 #endif
